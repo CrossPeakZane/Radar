@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Radar Animation App</title>
+    <title>Radar Animation with Overlay</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -12,10 +12,6 @@
             padding: 0;
             text-align: center;
             background-color: #f5f5f5;
-        }
-
-        #content {
-            padding: 20px;
         }
 
         #animationContainer {
@@ -28,6 +24,11 @@
             width: 100%;
             max-height: 100%;
             object-fit: contain;
+        }
+
+        #dateInputs {
+            margin-top: 20px;
+            text-align: center;
         }
 
         input[type="date"] {
@@ -53,43 +54,85 @@
         }
     </style>
 </head>
-
-<<body>
-    <div id="content">
-        <h1>Radar Animation App</h1>
+<body>
+    <div id="animationContainer">
+        <canvas id="animationCanvas" width="800" height="600"></canvas>
+    </div>
+    <div id="dateInputs">
         <label for="startDate">Start Date:</label>
         <input type="date" id="startDate">
+        <br>
         <label for="endDate">End Date:</label>
         <input type="date" id="endDate">
         <br>
         <button id="generateButton">Generate Animation</button>
-        <div id="loadingBar">
-            Loading images: <span id="progress">0%</span>
-        </div>
-        <div id="animationContainer">
-            <canvas id="animationCanvas" width="800" height="600"></canvas>
-        </div>
     </div>
 
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script>
         const animationCanvas = document.getElementById('animationCanvas');
         const generateButton = document.getElementById('generateButton');
-        const loadingBar = document.getElementById('loadingBar');
-        const progressText = document.getElementById('progress');
 
-        generateButton.addEventListener('click', generateAnimation);
+        async function playAnimationWithOverlay(images) {
+            console.log('Playing animation with overlay...');
 
-        async function generateAnimation() {
-            console.log('Generating animation...');
+            const animationDuration = 50; // Faster animation duration (in milliseconds)
+            const ctx = animationCanvas.getContext('2d');
+            const canvasWidth = animationCanvas.width;
+            const canvasHeight = animationCanvas.height;
 
-            const startDate = new Date(document.getElementById('startDate').value);
-            const endDate = new Date(document.getElementById('endDate').value);
+            let currentFrameIndex = 0;
+
+            const map = L.map('animationCanvas', {
+                center: [37.8, -96],
+                zoom: 4,
+                attributionControl: false
+            });
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+
+            function animate() {
+                ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+                // Draw radar image
+                ctx.drawImage(images[currentFrameIndex], 0, 0, canvasWidth, canvasHeight);
+
+                currentFrameIndex = (currentFrameIndex + 1) % images.length;
+
+                setTimeout(animate, animationDuration);
+            }
+
+            animate();
+        }
+
+        async function loadImage(url) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.src = url;
+                img.onload = () => resolve(img);
+                img.onerror = (error) => reject(error);
+            });
+        }
+
+        async function loadAndPlayAnimation(startDate, endDate) {
+            console.log('Loading radar images...');
+
+            const loadingBar = document.createElement('div');
+            loadingBar.style.position = 'fixed';
+            loadingBar.style.top = '0';
+            loadingBar.style.left = '0';
+            loadingBar.style.width = '0';
+            loadingBar.style.height = '5px';
+            loadingBar.style.background = '#007bff';
+            loadingBar.style.transition = 'width 0.5s';
+            document.body.appendChild(loadingBar);
+
+            console.log('Start Date:', startDate);
+            console.log('End Date:', endDate);
+
             const totalHours = Math.abs((endDate - startDate) / 36e5);
-
-            console.log('Total hours:', totalHours);
-
-            loadingBar.style.display = 'block';
-            loadingBar.style.width = '0%';
 
             const images = [];
 
@@ -109,52 +152,24 @@
                 try {
                     const img = await loadImage(radarUrl);
                     images.push(img);
-                    const progress = ((i + 1) / (totalHours + 1)) * 100;
-                    updateLoadingProgress(progress);
+                    loadingBar.style.width = `${(i / totalHours) * 100}%`;
                 } catch (error) {
                     console.error('Failed to load image:', radarUrl, error);
                 }
             }
 
             loadingBar.style.display = 'none';
-            playAnimation(images);
+            playAnimationWithOverlay(images);
         }
 
-        function updateLoadingProgress(progress) {
-            progressText.innerText = `${Math.floor(progress)}%`;
-            loadingBar.style.width = `${progress}%`;
-        }
+        generateButton.addEventListener('click', async () => {
+            const startDate = new Date(document.getElementById('startDate').value);
+            const endDate = new Date(document.getElementById('endDate').value);
+            loadAndPlayAnimation(startDate, endDate);
+        });
 
-        async function loadImage(url) {
-            return new Promise((resolve, reject) => {
-                const img = new Image();
-                img.src = url;
-                img.onload = () => resolve(img);
-                img.onerror = reject;
-            });
-        }
-
-        function playAnimation(images) {
-            console.log('Playing animation...');
-
-            const animationDuration = 50; // Faster animation duration (in milliseconds)
-            const ctx = animationCanvas.getContext('2d');
-            const canvasWidth = animationCanvas.width;
-            const canvasHeight = animationCanvas.height;
-
-            let currentFrameIndex = 0;
-
-            function animate() {
-                ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-                ctx.drawImage(images[currentFrameIndex], 0, 0, canvasWidth, canvasHeight);
-                currentFrameIndex = (currentFrameIndex + 1) % images.length;
-
-                setTimeout(animate, animationDuration);
-            }
-
-            animate();
-        }
+        // Initial load with default dates
+        //loadAndPlayAnimation(new Date('2018-09-14T00:00:00Z'), new Date('2018-09-14T23:00:00Z'));
     </script>
 </body>
-
 </html>
