@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radar Animation App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+            background-color: #f5f5f5;
+        }
+
+        #content {
+            padding: 20px;
+        }
+
+        #animationContainer {
+            margin: 0 auto;
+            max-width: 100%;
+            overflow: hidden;
+        }
+
+        #animationCanvas {
+            width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        input[type="date"] {
+            font-size: 16px;
+            padding: 10px;
+            margin: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        button {
+            font-size: 16px;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+
+<<body>
+    <div id="content">
+        <h1>Radar Animation App</h1>
+        <label for="startDate">Start Date:</label>
+        <input type="date" id="startDate">
+        <label for="endDate">End Date:</label>
+        <input type="date" id="endDate">
+        <br>
+        <button id="generateButton">Generate Animation</button>
+        <div id="loadingBar">
+            Loading images: <span id="progress">0%</span>
+        </div>
+        <div id="animationContainer">
+            <canvas id="animationCanvas" width="800" height="600"></canvas>
+        </div>
+    </div>
+
+    <script>
+        const animationCanvas = document.getElementById('animationCanvas');
+        const generateButton = document.getElementById('generateButton');
+        const loadingBar = document.getElementById('loadingBar');
+        const progressText = document.getElementById('progress');
+
+        generateButton.addEventListener('click', generateAnimation);
+
+        async function generateAnimation() {
+            console.log('Generating animation...');
+
+            const startDate = new Date(document.getElementById('startDate').value);
+            const endDate = new Date(document.getElementById('endDate').value);
+            const totalHours = Math.abs((endDate - startDate) / 36e5);
+
+            console.log('Total hours:', totalHours);
+
+            loadingBar.style.display = 'block';
+            loadingBar.style.width = '0%';
+
+            const images = [];
+
+            for (let i = 0; i <= totalHours; i++) {
+                const currentHour = new Date(startDate);
+                currentHour.setHours(currentHour.getHours() + i);
+
+                const formattedHour = String(currentHour.getUTCHours()).padStart(2, '0');
+                const formattedYear = currentHour.getUTCFullYear();
+                const formattedMonth = String(currentHour.getUTCMonth() + 1).padStart(2, '0');
+                const formattedDay = String(currentHour.getUTCDate()).padStart(2, '0');
+
+                const radarUrl = `https://mesonet.agron.iastate.edu/archive/data/${formattedYear}/${formattedMonth}/${formattedDay}/GIS/uscomp/n0q_${formattedYear}${formattedMonth}${formattedDay}${formattedHour}00.png`;
+
+                console.log('Loading:', radarUrl);
+
+                try {
+                    const img = await loadImage(radarUrl);
+                    images.push(img);
+                    const progress = ((i + 1) / (totalHours + 1)) * 100;
+                    updateLoadingProgress(progress);
+                } catch (error) {
+                    console.error('Failed to load image:', radarUrl, error);
+                }
+            }
+
+            loadingBar.style.display = 'none';
+            playAnimation(images);
+        }
+
+        function updateLoadingProgress(progress) {
+            progressText.innerText = `${Math.floor(progress)}%`;
+            loadingBar.style.width = `${progress}%`;
+        }
+
+        async function loadImage(url) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.src = url;
+                img.onload = () => resolve(img);
+                img.onerror = reject;
+            });
+        }
+
+        function playAnimation(images) {
+            console.log('Playing animation...');
+
+            const animationDuration = 50; // Faster animation duration (in milliseconds)
+            const ctx = animationCanvas.getContext('2d');
+            const canvasWidth = animationCanvas.width;
+            const canvasHeight = animationCanvas.height;
+
+            let currentFrameIndex = 0;
+
+            function animate() {
+                ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+                ctx.drawImage(images[currentFrameIndex], 0, 0, canvasWidth, canvasHeight);
+                currentFrameIndex = (currentFrameIndex + 1) % images.length;
+
+                setTimeout(animate, animationDuration);
+            }
+
+            animate();
+        }
+    </script>
+</body>
+
+</html>
