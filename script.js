@@ -1,7 +1,10 @@
 const animationCanvas = document.getElementById('animationCanvas');
 const generateButton = document.getElementById('generateButton');
+let images = []; // Array to store loaded images
+let dates = []; // Array to store corresponding dates
+let animationInterval; // Variable to hold animation interval
 
-async function playAnimationWithOverlay(images, dates) {
+function playAnimationWithOverlay() {
     const animationDuration = 50;
     const ctx = animationCanvas.getContext('2d');
     const canvasWidth = animationCanvas.width;
@@ -20,10 +23,10 @@ async function playAnimationWithOverlay(images, dates) {
         ctx.fillText(formattedDate, 10, canvasHeight - 10);
 
         currentFrameIndex = (currentFrameIndex + 1) % images.length;
-        setTimeout(animate, animationDuration);
     }
 
-    animate();
+    animationInterval = setInterval(animate, animationDuration);
+    console.log('Animation started.');
 }
 
 async function loadImage(url) {
@@ -35,6 +38,10 @@ async function loadImage(url) {
 }
 
 async function loadAndPlayAnimation(startDate, endDate) {
+    clearInterval(animationInterval); // Clear previous animation interval
+    images = []; // Clear images array
+    dates = []; // Clear dates array
+
     const loadingBar = document.createElement('div');
     loadingBar.style.position = 'fixed';
     loadingBar.style.top = '0';
@@ -44,9 +51,11 @@ async function loadAndPlayAnimation(startDate, endDate) {
     loadingBar.style.background = '#007bff';
     loadingBar.style.transition = 'width 0.5s';
     document.body.appendChild(loadingBar);
+
+    console.log('Loading images...');
+
     const totalHours = Math.abs((endDate - startDate) / 36e5);
-    const images = [];
-    const dates = [];
+
     for (let i = 0; i <= totalHours; i++) {
         const currentHour = new Date(startDate);
         currentHour.setHours(currentHour.getHours() + i);
@@ -60,22 +69,19 @@ async function loadAndPlayAnimation(startDate, endDate) {
             const img = await loadImage(radarUrl);
             images.push(img);
             loadingBar.style.width = `${(i / totalHours) * 100}%`;
+            console.log(`Loaded image ${i + 1} of ${totalHours + 1}`);
         } catch (error) {
             console.error('Failed to load image:', radarUrl, error);
         }
     }
     loadingBar.style.display = 'none';
-    playAnimationWithOverlay(images, dates);
+    console.log('All images loaded.');
+    playAnimationWithOverlay();
 }
 
 generateButton.addEventListener('click', async () => {
     const startDate = new Date(document.getElementById('startDate').value);
     const endDate = new Date(document.getElementById('endDate').value);
-
-    // Create a new canvas for each animation
-    const canvas = document.createElement('canvas');
-    canvas.width = 800;
-    canvas.height = 600;
 
     // Load and play new animation
     loadAndPlayAnimation(startDate, endDate);
