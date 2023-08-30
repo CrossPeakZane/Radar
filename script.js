@@ -89,7 +89,26 @@ generateButton.addEventListener('click', async () => {
 console.log("Populating dropdown...");
 const hurricaneDropdown = document.getElementById('hurricaneSelect');
 const hurricaneDates = {
-    // Your hurricane dates here
+    "Donna (9/10/1960)": new Date("9/10/1960"),
+    "Camille (8/17/1969)": new Date("8/17/1969"),
+    "Gloria (9/27/1985)": new Date("9/27/1985"),
+    "Hugo (9/22/1989)": new Date("9/22/1989"),
+    "Andrew (8/24/1992)": new Date("8/24/1992"),
+    "Isabel (9/18/2003)": new Date("9/18/2003"),
+    "Charley (8/13/2004)": new Date("8/13/2004"),
+    "Frances (9/5/2004)": new Date("9/5/2004"),
+    "Ivan (9/16/2004)": new Date("9/16/2004"),
+    "Jeanne (9/26/2004)": new Date("9/26/2004"),
+    "Katrina (8/29/2005)": new Date("8/29/2005"),
+    "Rita (9/24/2005)": new Date("9/24/2005"),
+    "Wilma (10/24/2005)": new Date("10/24/2005"),
+    "Ike (9/13/2008)": new Date("9/13/2008"),
+    "Sandy (10/29/2012)": new Date("10/29/2012"),
+    "Matthew (10/8/2016)": new Date("10/8/2016"),
+    "Harvey (8/25/2017)": new Date("8/25/2017"),
+    "Irma (9/10/2017)": new Date("9/10/2017"),
+    "Maria (9/20/2017)": new Date("9/20/2017"),
+    "Michael (10/10/2018)": new Date("10/10/2018")
 };
 for (const [hurricaneName, landfallDate] of Object.entries(hurricaneDates)) {
     console.log(`Adding option: ${hurricaneName}`);
