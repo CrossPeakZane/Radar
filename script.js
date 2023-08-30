@@ -41,14 +41,27 @@ async function loadImage(url) {
 
 // Function to load and play the animation
 async function loadAndPlayAnimation(startDate, endDate) {
-    clearInterval(animationInterval); // Clear previous animation interval
+
+const loadingBar = document.createElement('div');
+loadingBar.style.position = 'fixed';
+loadingBar.style.top = '0';
+loadingBar.style.left = '0';
+loadingBar.style.width = '0';
+loadingBar.style.height = '5px';
+loadingBar.style.background = '#007bff';
+loadingBar.style.transition = 'width 0.5s';
+document.body.appendChild(loadingBar);
+  
+  
+  clearInterval(animationInterval); // Clear previous animation interval
     images = []; // Clear images array
     dates = []; // Clear dates array
 
     const totalHours = Math.abs((endDate - startDate) / 36e5);
 
     for (let i = 0; i <= totalHours; i++) {
-        const currentHour = new Date(startDate);
+loadingBar.style.width = `${(i / totalHours) * 100}%`;
+      const currentHour = new Date(startDate);
         currentHour.setHours(currentHour.getHours() + i);
         dates.push(currentHour);
 
@@ -75,7 +88,9 @@ async function loadAndPlayAnimation(startDate, endDate) {
             }
         }
     }
-
+  
+    loadingBar.style.display = 'none';
+loadingBar.style.width =0;
     playAnimationWithOverlay(); // Call the function to play the animation
 }
 
