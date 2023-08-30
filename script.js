@@ -65,6 +65,9 @@ async function loadAndPlayAnimation(startDate, endDate) {
         const formattedMonth = String(currentHour.getUTCMonth() + 1).padStart(2, '0');
         const formattedDay = String(currentHour.getUTCDate()).padStart(2, '0');
         const radarUrl = `https://mesonet.agron.iastate.edu/archive/data/${formattedYear}/${formattedMonth}/${formattedDay}/GIS/uscomp/n0q_${formattedYear}${formattedMonth}${formattedDay}${formattedHour}00.png`;
+
+      console.log(`Radar URL for ${formattedYear}-${formattedMonth}-${formattedDay} ${formattedHour}:00 UTC: ${radarUrl}`);
+      
         try {
             const img = await loadImage(radarUrl);
             images.push(img);
@@ -86,3 +89,27 @@ generateButton.addEventListener('click', async () => {
     // Load and play new animation
     loadAndPlayAnimation(startDate, endDate);
 });
+// Existing code
+const hurricaneSelect = document.getElementById('hurricaneSelect');
+
+const hurricaneDates = {
+    "Katrina": new Date("8/29/2005"),
+    "Sandy": new Date("10/29/2012"),
+    // Add more hurricanes and their landfall dates here
+};
+
+hurricaneSelect.addEventListener('change', () => {
+    const selectedHurricane = hurricaneSelect.value;
+    if (hurricaneDates[selectedHurricane]) {
+        const landfallDate = hurricaneDates[selectedHurricane];
+        const startDate = new Date(landfallDate);
+        startDate.setDate(startDate.getDate() - 3);
+        const endDate = new Date(landfallDate);
+        endDate.setDate(endDate.getDate() + 4);
+
+        document.getElementById('startDate').valueAsDate = startDate;
+        document.getElementById('endDate').valueAsDate = endDate;
+    }
+});
+
+// Existing code
