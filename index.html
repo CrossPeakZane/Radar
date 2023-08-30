@@ -8,7 +8,7 @@
 </head>
 <body>
     <div id="animationContainer">
-        <canvas id="animationCanvas" width="800" height="600"></canvas>
+        <canvas id="animationCanvas" width=”100%”></canvas>
     </div>
     <div id="dateInputs">
         <label for="startDate">Start Date:</label>
@@ -18,20 +18,22 @@
         <input type="date" id="endDate">
         <br>
 
-      <!-- Existing code -->
+<br />
 <div id="dateInputs">
-    <!-- ... -->
+  
     <label for="hurricaneSelect">Select Hurricane:</label>
     <select id="hurricaneSelect">
     <option value="">--Select--</option>
 </select>
 </div>
-<!-- Existing code -->
 
         <button id="generateButton">Generate Animation</button>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-    <script src="script.js"></script>
+<script src="hurricaneData.js"></script>
+<script src="imageLoader.js"></script>
+<script src="animation.js"></script>
+<script src="main.js"></script>
 </body>
 </html>

@@ -1,10 +1,12 @@
 const animationCanvas = document.getElementById('animationCanvas');
 const generateButton = document.getElementById('generateButton');
-let images = []; // Array to store loaded images
-let dates = []; // Array to store corresponding dates
-let animationInterval; // Variable to hold animation interval
+let images = [];
+let dates = [];
+let animationInterval;
+let hurricaneDates = {};
 
-function playAnimationWithOverlay() {
+async function playAnimationWithOverlay() {
+ 
     const animationDuration = 50;
     const ctx = animationCanvas.getContext('2d');
     const canvasWidth = animationCanvas.width;
@@ -12,14 +14,14 @@ function playAnimationWithOverlay() {
     let currentFrameIndex = 0;
 
     function animate() {
+        console.log(`Current frame index: ${currentFrameIndex}`);
         ctx.clearRect(0, 0, canvasWidth, canvasHeight);
         ctx.drawImage(images[currentFrameIndex], 0, 0, canvasWidth, canvasHeight);
 
-        // Add date and time overlay
         const currentHour = dates[currentFrameIndex];
         const formattedDate = currentHour.toLocaleString();
         ctx.fillStyle = 'white';
-        ctx.font = '16px Arial';
+        ctx.font = '10px Arial';
         ctx.fillText(formattedDate, 10, canvasHeight - 10);
 
         currentFrameIndex = (currentFrameIndex + 1) % images.length;
@@ -29,112 +31,119 @@ function playAnimationWithOverlay() {
     console.log('Animation started.');
 }
 
-// Function to load an image from a URL
-async function loadImage(url) {
+async function loadImage(url, index) {
     return new Promise((resolve, reject) => {
         const img = new Image();
         img.src = url;
-        img.onload = () => resolve(img);
+        img.onload = () => resolve({ img, index });
         img.onerror = (error) => reject(error);
     });
 }
 
-// Function to load and play the animation
 async function loadAndPlayAnimation(startDate, endDate) {
+    clearInterval(animationInterval);
+    images = [];
+    dates = [];
 
-const loadingBar = document.createElement('div');
-loadingBar.style.position = 'fixed';
-loadingBar.style.top = '0';
-loadingBar.style.left = '0';
-loadingBar.style.width = '0';
-loadingBar.style.height = '5px';
-loadingBar.style.background = '#007bff';
-loadingBar.style.transition = 'width 0.5s';
-document.body.appendChild(loadingBar);
-  
-  
-  clearInterval(animationInterval); // Clear previous animation interval
-    images = []; // Clear images array
-    dates = []; // Clear dates array
+    const loadingBar = document.createElement('div');
+    loadingBar.style.position = 'fixed';
+    loadingBar.style.top = '0';
+    loadingBar.style.left = '0';
+    loadingBar.style.width = '0';
+    loadingBar.style.height = '5px';
+    loadingBar.style.background = '#007bff';
+    loadingBar.style.transition = 'width 0.5s';
+    document.body.appendChild(loadingBar);
 
-    const totalHours = Math.abs((endDate - startDate) / 36e5);
+    const totalMinutes = Math.abs((endDate - startDate) / 60000);
+    const minuteIncrement = 15;
+    let completedDownloads = 0;
 
-    for (let i = 0; i <= totalHours; i++) {
-loadingBar.style.width = `${(i / totalHours) * 100}%`;
-      const currentHour = new Date(startDate);
-        currentHour.setHours(currentHour.getHours() + i);
-        dates.push(currentHour);
+    const updateLoadingBar = () => {
+        loadingBar.style.width = `${(completedDownloads / totalMinutes) * 100}%`;
+    };
 
-        const formattedHour = String(currentHour.getUTCHours()).padStart(2, '0');
-        const formattedYear = currentHour.getUTCFullYear();
-        const formattedMonth = String(currentHour.getUTCMonth() + 1).padStart(2, '0');
-        const formattedDay = String(currentHour.getUTCDate()).padStart(2, '0');
+    const imagePromises = []; // Array to hold all image promises
 
-        const radarUrlN0Q = `https://mesonet.agron.iastate.edu/archive/data/${formattedYear}/${formattedMonth}/${formattedDay}/GIS/uscomp/n0q_${formattedYear}${formattedMonth}${formattedDay}${formattedHour}00.png`;
-        const radarUrlN0R = `https://mesonet.agron.iastate.edu/archive/data/${formattedYear}/${formattedMonth}/${formattedDay}/GIS/uscomp/n0r_${formattedYear}${formattedMonth}${formattedDay}${formattedHour}00.png`;
+    for (let i = 0; i <= totalMinutes; i += minuteIncrement) {
+        const currentMinute = new Date(startDate);
+        currentMinute.setMinutes(currentMinute.getMinutes() + i);
+        dates.push(currentMinute);
 
-        try {
-            const img = await loadImage(radarUrlN0Q);
-            images.push(img);
-            console.log(`Loaded n0q image ${i + 1} of ${totalHours + 1}`);
-        } catch (error) {
-            console.warn('Failed to load n0q image:', radarUrlN0Q);
-            try {
-                const img = await loadImage(radarUrlN0R);
+        const formattedMinute = String(currentMinute.getUTCMinutes()).padStart(2, '0');
+        const formattedHour = String(currentMinute.getUTCHours()).padStart(2, '0');
+        const formattedYear = currentMinute.getUTCFullYear();
+        const formattedMonth = String(currentMinute.getUTCMonth() + 1).padStart(2, '0');
+        const formattedDay = String(currentMinute.getUTCDate()).padStart(2, '0');
+
+        const radarUrlN0Q = `https://mesonet.agron.iastate.edu/archive/data/${formattedYear}/${formattedMonth}/${formattedDay}/GIS/uscomp/n0q_${formattedYear}${formattedMonth}${formattedDay}${formattedHour}${formattedMinute}.png`;
+        const radarUrlN0R = `https://mesonet.agron.iastate.edu/archive/data/${formattedYear}/${formattedMonth}/${formattedDay}/GIS/uscomp/n0r_${formattedYear}${formattedMonth}${formattedDay}${formattedHour}${formattedMinute}.png`;
+
+        const imagePromise = loadImage(radarUrlN0Q, i)
+            .then(img => {
                 images.push(img);
-                console.log(`Loaded n0r image ${i + 1} of ${totalHours + 1}`);
-            } catch (error) {
-                console.error('Failed to load both n0q and n0r images:', radarUrlN0Q, radarUrlN0R);
-            }
-        }
+                completedDownloads += minuteIncrement;
+                updateLoadingBar();
+            })
+            .catch(error => {
+                return loadImage(radarUrlN0R, i)
+                    .then(img => {
+                        images.push(img);
+                        completedDownloads += minuteIncrement;
+                        updateLoadingBar();
+                    })
+                    .catch(error => {
+                        console.error('Failed to load both n0q and n0r images:', radarUrlN0Q, radarUrlN0R);
+                    });
+            });
+
+        imagePromises.push(imagePromise); // Add each promise to the array
     }
-  
+
+    await Promise.all(imagePromises); // Wait for all promises to resolve
+
+    images.sort((a, b) => a.index - b.index);
+    images = images.map(item => item.img);
+
     loadingBar.style.display = 'none';
-loadingBar.style.width =0;
-    playAnimationWithOverlay(); // Call the function to play the animation
+
+    console.log(`Total frames: ${images.length}`);
+    playAnimationWithOverlay();
 }
 
 generateButton.addEventListener('click', async () => {
     const startDate = new Date(document.getElementById('startDate').value);
     const endDate = new Date(document.getElementById('endDate').value);
-
-    // Load and play new animation
     loadAndPlayAnimation(startDate, endDate);
 });
-// Existing code
+
 const hurricaneSelect = document.getElementById('hurricaneSelect');
 
-const hurricaneDates = {
-    "Donna (9/10/1960)": new Date("9/10/1960"),
-    "Camille (8/17/1969)": new Date("8/17/1969"),
-    "Gloria (9/27/1985)": new Date("9/27/1985"),
-    "Hugo (9/22/1989)": new Date("9/22/1989"),
-    "Andrew (8/24/1992)": new Date("8/24/1992"),
-    "Isabel (9/18/2003)": new Date("9/18/2003"),
-    "Charley (8/13/2004)": new Date("8/13/2004"),
-    "Frances (9/5/2004)": new Date("9/5/2004"),
-    "Ivan (9/16/2004)": new Date("9/16/2004"),
-    "Jeanne (9/26/2004)": new Date("9/26/2004"),
-    "Katrina (8/29/2005)": new Date("8/29/2005"),
-    "Rita (9/24/2005)": new Date("9/24/2005"),
-    "Wilma (10/24/2005)": new Date("10/24/2005"),
-    "Ike (9/13/2008)": new Date("9/13/2008"),
-    "Sandy (10/29/2012)": new Date("10/29/2012"),
-    "Matthew (10/8/2016)": new Date("10/8/2016"),
-    "Harvey (8/25/2017)": new Date("8/25/2017"),
-    "Irma (9/10/2017)": new Date("9/10/2017"),
-    "Maria (9/20/2017)": new Date("9/20/2017"),
-    "Michael (10/10/2018)": new Date("10/10/2018")
-};
+async function loadHurricaneDates() {
+    const response = await fetch('hurricanes.txt');
+    const text = await response.text();
+    const lines = text.split('\n');
+    hurricaneDates = {};
 
-// Populate the hurricane dropdown dynamically
-const hurricaneDropdown = document.getElementById('hurricaneSelect');
-for (const [hurricaneName, landfallDate] of Object.entries(hurricaneDates)) {
-    const option = document.createElement('option');
-    option.value = hurricaneName;
-    option.text = hurricaneName;
-    hurricaneDropdown.appendChild(option);
+    lines.forEach(line => {
+        const [name, date] = line.split(',');
+        hurricaneDates[name] = new Date(date);
+    });
+
+    return hurricaneDates;
 }
+
+window.addEventListener('load', async () => {
+    const hurricaneDates = await loadHurricaneDates();
+    const hurricaneDropdown = document.getElementById('hurricaneSelect');
+
+    for (const [name, date] of Object.entries(hurricaneDates)) {
+        const option = document.createElement('option');
+        option.value = name;
+        option.text = `${name} (${date.toLocaleDateString()})`;
+        hurricaneDropdown.appendChild(option);
+    }
+});
 
 hurricaneSelect.addEventListener('change', () => {
     const selectedHurricane = hurricaneSelect.value;
@@ -149,5 +158,3 @@ hurricaneSelect.addEventListener('change', () => {
         document.getElementById('endDate').valueAsDate = endDate;
     }
 });
-
-// Existing code
